@@ -1,8 +1,8 @@
-# [Request for help] 3D Billards Pool: Matrix Mode Solution Proof
+# [Request for help] 3D Billiards Pool: Matrix Mode Solution Proof
 
 [View Source Code on Github](https://github.com/jakedowns/matrix-mode-sequence-finder)
 
-Eivaa Games' [Pool Billards 3D](https://www.eivaagames.com/games/pool-billiards-3d/) has this unique *Matrix* mode. It's has a "correct solution" to get the highest score possible. but when I set about finding it, I ran into some interesting challenges. I'm wondering if any math wizards out there can devise a way of PROVING what the BEST sequence of 1-15 is to achieve the highest possible score in this mode. The way the mode is scored is as follows:
+Eivaa Games' [Pool Billiards 3D](https://www.eivaagames.com/games/pool-billiards-3d/) has this unique *Matrix* mode. It's has a "correct solution" to get the highest score possible. but when I set about finding it, I ran into some interesting challenges. I'm wondering if any math wizards out there can devise a way of PROVING what the BEST sequence of 1-15 is to achieve the highest possible score in this mode. The way the mode is scored is as follows:
 
 > Rules: "In Matrix Mode, when you pocket a ball your score will be multiplied by the difference of your previous and current ball number if the current is more than the previous; but if the current is less, then your score is divided by the current ball number."
 
