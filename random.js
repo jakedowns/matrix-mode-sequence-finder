@@ -5,6 +5,8 @@ const moment = require('moment');
 
 let SAVEFILEPATH = "./results.json";
 
+var nf = new Intl.NumberFormat();
+
 /*
 
 params for: 
@@ -14,39 +16,51 @@ MAX_GENERATIONS,
 MAX_ITERATIONS_PER_GENERATION
 MAX_GENERATIONS_before_stopping
 
+WEIGHT_MODE (1=delta, 2=total)
+FRESH_START
+
 */
 const MOMENT_START = moment();
 const argv = yargs
 	.command('', 'Calculates best sequence for 3D Pool Matrix Mode')
-    .option('SEQ_LEN', {
-    	alias: 'l',
-        description: 'How long of a sequence to run',
-        type: 'number',
-    })
-    .option('MIN_SCORE_THRESHOLD', {
-        
-    })
-    .option('MAX_GENERATIONS', {
-        
-    })
-    .option('MAX_ITERATIONS_PER_GENERATION', {
-        
-    })
-    .help()
-    .alias('help', 'h')
-    .argv;
+	.option('SEQ_LEN', {
+		alias: 'l',
+		description: 'How long of a sequence to run',
+		type: 'number',
+	})
+	.option('MIN_SCORE_THRESHOLD', {
+		alias: 'm'
+	})
+	.option('MAX_GENERATIONS', {
+		alias: 'g'
+	})
+	.option('MAX_ITERATIONS_PER_GENERATION', {
+		alias: 'i'
+	})
+	.option('WEIGHT_MODE', {
+		alias: 'w',
+	})
+	.option('FRESH_START', {
+		alias: 'f',
+		description: 'reset results.json for seq',
+		type: 'boolean'
+	})
+	.help()
+	.alias('help', 'h')
+	.argv;
 
- /* */
+const WEIGHT_MODE = argv.WEIGHT_MODE || 1;
+const FRESH_START = argv.FRESH_START || false;
 
 let rankings = {};
 let idealNumberForSlots = {};
 
 let SEQ_LEN = argv.SEQ_LEN;
-if(!SEQ_LEN){
+if (!SEQ_LEN) {
 	return;
 }
-console.log('STARTING for SEQ_LEN',SEQ_LEN);
-const MIN_SCORE_THRESHOLD = argv.MIN_SCORE_THRESHOLD || 1;// memory leak protection
+console.log('STARTING for SEQ_LEN', SEQ_LEN);
+const MIN_SCORE_THRESHOLD = argv.MIN_SCORE_THRESHOLD || 0; // memory leak protection
 
 let range = _.range(1, SEQ_LEN + 1);
 let topScore = 0;
@@ -92,10 +106,10 @@ let scoreSequence = function(seq, id) {
 			console.log({
 				i: id,
 				seqString,
-				final,
+				final: nf.format(final),
 				delta_since_last_beat
 			});
-			
+
 
 			// get latest used weighted list used to generate this sequence
 			_.map(weightedLists, (list, slot) => {
@@ -185,19 +199,32 @@ try {
 } catch (e) {
 	console.warn('creating new file');
 }
-if (contents &&
-	contents["seq_len_"+SEQ_LEN] &&
-	contents["seq_len_"+SEQ_LEN].idealNumberForSlots
-) {
-	// pick up where we left off
-	topScoringSequence = contents["seq_len_"+SEQ_LEN].best;
-	topScore = contents["seq_len_"+SEQ_LEN].top;
-	idealNumberForSlots = contents["seq_len_"+SEQ_LEN].idealNumberForSlots;
+if (FRESH_START) {
+	console.log('fresh start');
+	if (contents &&
+		contents["seq_len_" + SEQ_LEN]
+	) {
+		contents["seq_len_" + SEQ_LEN] = {
+			top: 0
+		};
+		fs.writeFileSync(SAVEFILEPATH, JSON.stringify(contents, null, 2));
+	}
+} else {
+	if (contents &&
+		contents["seq_len_" + SEQ_LEN] &&
+		contents["seq_len_" + SEQ_LEN].idealNumberForSlots
+	) {
+		// pick up where we left off
+		topScoringSequence = contents["seq_len_" + SEQ_LEN].best;
+		topScore = contents["seq_len_" + SEQ_LEN].top;
+		idealNumberForSlots = contents["seq_len_" + SEQ_LEN].idealNumberForSlots;
 
-	console.log('picking up where we left off for ',"seq_len_"+SEQ_LEN,
-		{
-			topScore, topScoringSequence
+		console.log('picking up where we left off for ', "seq_len_" + SEQ_LEN, {
+			topScore,
+			topScoringSequence,
+			idealNumberForSlots
 		});
+	}
 }
 
 
@@ -222,8 +249,13 @@ function runGeneration() {
 				// let's try weighting a little heavier by using the
 				// full score as the value to be added
 				// or the difference between the best and previous?
-				//rankings[num][ord+1]+=score; // delta
-				rankings[num][ord + 1] += score - prevBest; // delta
+
+				if (WEIGHT_MODE === 1) {
+					rankings[num][ord + 1] += score - prevBest; // delta
+				} else if (WEIGHT_MODE === 2) {
+					rankings[num][ord + 1] += score; // total
+				}
+
 			});
 		}
 	}
@@ -237,7 +269,7 @@ function runGeneration() {
 		filterRankings(rankings, 3);
 		console.log('FINAL', {
 			topScoringSequence,
-			topScore,
+			topScore: nf.format(topScore),
 			topScoringID,
 			idealNumberForSlots,
 			duration,
@@ -250,11 +282,11 @@ function runGeneration() {
 	console.log('NEXT GEN', {
 		generation,
 		topScoringSequence,
-		topScore,
+		topScore: nf.format(topScore),
 		topScoringID,
 		duration,
-		delta_since_last_beat
-		//idealNumberForSlots
+		delta_since_last_beat,
+		idealNumberForSlots
 	});
 
 	// pop stack (GC)
@@ -266,20 +298,23 @@ function runGeneration() {
 var rand = function(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 };
+var probability = function(n) {
+     return !!n && Math.random() <= n;
+};
 
 function generateWeightedList(slot, pool) {
 	let weightedList = pool.slice();
+
+	// half the time... ignore our weights and go full random.
+	if(probability(.5)){
+		return weightedList;
+	}
+
 	for (var i = 1; i <= range.length; i++) {
 		// for each slot
 		if (idealNumberForSlots[slot]) {
 			// if we have any scored candidate numbers for this slot
 			// let's add them to our weighted list (as long as they're in the pool)
-
-			let maxScoreForSlot = _.reduce(idealNumberForSlots[slot], (memo, num) => {
-				return memo + num;
-			}, 0);
-
-			let averageScoreForSlot = maxScoreForSlot / Object.keys(idealNumberForSlots).length;
 
 			_.mapObject(idealNumberForSlots[slot], (score, number) => {
 				number = parseInt(number);
@@ -287,25 +322,19 @@ function generateWeightedList(slot, pool) {
 				//console.log({inPool, number, score});
 
 				if (inPool) {
-					let weight = score / maxScoreForSlot;
-					let comparedToAverage = score / averageScoreForSlot;
-					// console.log('weighting number', {
-					// 	slot, 
-					// 	number, 
-					// 	score,
-					// 	maxScoreForSlot,
-					// 	averageScoreForSlot,
-					// 	comparedToAverage,
-					// 	weight,
-					// 	weightedListLen: weightedList.length
-					// });
-					for (var b = 0; b < Math.round(comparedToAverage); b++) {
-						weightedList.push(number);
+					if(probability(.5)){
+						// introducing some chance here that adds some noise to the weights
+						// by ignoring scores occasionally 
+						// so that we don't get stuck with overly confident local maxima
+						for (var b = 0; b < score; b++) {
+							weightedList.push(number);
+						}
 					}
 				}
 			})
 		}
 	}
+
 	if (weightedList.length > pool.length) {
 		// console.log('weighted list for slot', {slot, 
 		// 	weightedListLen:weightedList.length, 
@@ -313,6 +342,7 @@ function generateWeightedList(slot, pool) {
 		// 	//idealNumberForSlots
 		// });
 	}
+
 	return weightedList;
 }
 
@@ -347,7 +377,7 @@ function getSemiRandomSequence(arr) {
 
 function filterRankings(rankings, threshold = 3) {
 	let filtered = {};
-	idealNumberForSlots = {};
+	//idealNumberForSlots = {};
 
 	_.mapObject(rankings, (ordered, num) => {
 		let out = {};
@@ -366,6 +396,21 @@ function filterRankings(rankings, threshold = 3) {
 		if (Object.keys(out).length) {
 			filtered[num] = out;
 		}
+	});
+
+	// normalize weights
+	_.map(range, (slot, key) => {
+		let maxScoreForSlot = _.reduce(idealNumberForSlots[slot], (memo, num) => {
+			return memo + num;
+		}, 0);
+
+		let averageScoreForSlot = maxScoreForSlot / Object.keys(idealNumberForSlots).length;
+
+		_.mapObject(idealNumberForSlots[slot], (score, number) => {
+			let weight = score / maxScoreForSlot;
+			let comparedToAverage = score / averageScoreForSlot;
+			idealNumberForSlots[slot][number] = Math.ceil(comparedToAverage); // was Math.round
+		});
 	});
 
 	//console.log({filtered, idealNumberForSlots});
