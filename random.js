@@ -1,33 +1,58 @@
 let _ = require('underscore');
+const yargs = require('yargs');
 const fs = require('fs');
+const moment = require('moment');
 
 let SAVEFILEPATH = "./results.json";
 
 /*
 
-todo: accept params for: 
-min_score, 
+params for: 
 seq_len, 
-max_generations,
-max_iterations_per_generation
-max_generations_before_stopping
+min_score,
+MAX_GENERATIONS,
+MAX_ITERATIONS_PER_GENERATION
+MAX_GENERATIONS_before_stopping
 
 */
+const MOMENT_START = moment();
+const argv = yargs
+	.command('', 'Calculates best sequence for 3D Pool Matrix Mode')
+    .option('SEQ_LEN', {
+    	alias: 'l',
+        description: 'How long of a sequence to run',
+        type: 'number',
+    })
+    .option('MIN_SCORE_THRESHOLD', {
+        
+    })
+    .option('MAX_GENERATIONS', {
+        
+    })
+    .option('MAX_ITERATIONS_PER_GENERATION', {
+        
+    })
+    .help()
+    .alias('help', 'h')
+    .argv;
+
+ /* */
 
 let rankings = {};
 let idealNumberForSlots = {};
 
-let SEQ_LEN = process.argv[2]; // || 13;
+let SEQ_LEN = argv.SEQ_LEN;
 if(!SEQ_LEN){
 	return;
 }
 console.log('STARTING for SEQ_LEN',SEQ_LEN);
-const MIN_SCORE_THRESHOLD = 1; //2457600; // memory leak protection
+const MIN_SCORE_THRESHOLD = argv.MIN_SCORE_THRESHOLD || 1;// memory leak protection
 
 let range = _.range(1, SEQ_LEN + 1);
 let topScore = 0;
 let topScoringSequence = "";
 let topScoringID = "";
+let TIME_TOP_SCORE_BEAT = moment();
 let results = [];
 let iteration = 1;
 let weightedLists = [];
@@ -59,13 +84,18 @@ let scoreSequence = function(seq, id) {
 		if (final > topScore) {
 			let seqString = seq.join(',');
 			topScore = final;
+			topScoringSequence = seqString;
+			topScoringID = id;
+			TIME_TOP_SCORE_BEAT = moment()
+
+			let delta_since_last_beat = moment.utc(moment().diff(TIME_TOP_SCORE_BEAT)).format("HH:mm:ss");
 			console.log({
 				i: id,
 				seqString,
-				final
+				final,
+				delta_since_last_beat
 			});
-			topScoringSequence = seqString;
-			topScoringID = id;
+			
 
 			// get latest used weighted list used to generate this sequence
 			_.map(weightedLists, (list, slot) => {
@@ -142,7 +172,8 @@ _.map(range, (number) => {
 	});
 });
 
-let max_generations = 10;
+const MAX_GENERATIONS = argv.MAX_GENERATIONS || 10;
+const MAX_ITERATIONS_PER_GENERATION = argv.MAX_ITERATIONS_PER_GENERATION || 1000000;
 let generation = 1;
 
 let contents = {};
@@ -159,13 +190,19 @@ if (contents &&
 	contents["seq_len_"+SEQ_LEN].idealNumberForSlots
 ) {
 	// pick up where we left off
-	console.log('picking up where we left off for ',"seq_len_"+SEQ_LEN);
+	topScoringSequence = contents["seq_len_"+SEQ_LEN].best;
+	topScore = contents["seq_len_"+SEQ_LEN].top;
 	idealNumberForSlots = contents["seq_len_"+SEQ_LEN].idealNumberForSlots;
+
+	console.log('picking up where we left off for ',"seq_len_"+SEQ_LEN,
+		{
+			topScore, topScoringSequence
+		});
 }
 
 
 function runGeneration() {
-	for (var i = 0; i < 1000000; i++) {
+	for (var i = 0; i < MAX_ITERATIONS_PER_GENERATION; i++) {
 		let arr = range.slice();
 
 		let shuffled = getSemiRandomSequence(arr); //_.shuffle(arr);
@@ -191,15 +228,20 @@ function runGeneration() {
 		}
 	}
 
+	let duration = moment.utc(moment().diff(MOMENT_START)).format("HH:mm:ss");
+	let delta_since_last_beat = moment.utc(moment().diff(TIME_TOP_SCORE_BEAT)).format("HH:mm:ss");
+
 	generation++;
-	if (generation > max_generations) {
+	if (generation > MAX_GENERATIONS) {
 		// END
 		filterRankings(rankings, 3);
 		console.log('FINAL', {
 			topScoringSequence,
 			topScore,
 			topScoringID,
-			idealNumberForSlots
+			idealNumberForSlots,
+			duration,
+			delta_since_last_beat
 		});
 		return;
 	}
@@ -210,6 +252,8 @@ function runGeneration() {
 		topScoringSequence,
 		topScore,
 		topScoringID,
+		duration,
+		delta_since_last_beat
 		//idealNumberForSlots
 	});
 
