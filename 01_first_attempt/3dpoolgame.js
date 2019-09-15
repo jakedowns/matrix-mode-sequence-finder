@@ -1,12 +1,17 @@
 let _ = require('underscore');
 
-let base = _.range(1,16); // 1 - 15
+const moment = require('moment');
+
+let range = _.range(1,16); // 1 - 15
 
 let topScore = 0;
 
 let results = [];
 
 const MIN_SCORE_THRESHOLD = 1; // memory leak prevention
+
+const MOMENT_START = moment();
+let TIME_TOP_SCORE_BEAT = moment();
 
 let scoreSequence = function(seq){
 	let final = -1;
@@ -29,8 +34,10 @@ let scoreSequence = function(seq){
    //console.log(final);
 	 results.push({seq:seq.join(','), final});
    if(final > topScore){
+    TIME_TOP_SCORE_BEAT = moment();
     topScore = final;
-    console.log({seq:seq.join(','), final});
+    let delta_since_last_beat = moment.utc(moment().diff(TIME_TOP_SCORE_BEAT)).format("HH:mm:ss");
+    console.log({seq:seq.join(','), final, delta_since_last_beat});
    }
   }
 	return final;
@@ -79,33 +86,46 @@ scoreSequence(base.slice().reverse()); //res: 0
 const permutator = (inputArr) => {
   let result = [];
 
-  const permute = (arr, m = []) => {
+  const permute = (arr, m = [], depth = 1) => {
+    //console.log('permute', arr, m);
+    let duration = moment.utc(moment().diff(MOMENT_START)).format("HH:mm:ss");;
+    console.log({depth, duration});
     if (arr.length === 0) {
     	let score = scoreSequence(m);
       // if(score>MIN_SCORE_THRESHOLD){
 	     // result.push(m);
       // }
+      console.log('latest', m, score);
+      console.log('update!', _.sortBy(results, 'final').reverse()[0]);
+
+
+      let delta_since_last_beat = moment.utc(moment().diff(TIME_TOP_SCORE_BEAT)).format("HH:mm:ss");
+      let duration = moment.utc(moment().diff(MOMENT_START)).format("HH:mm:ss");;
+      console.log({duration, delta_since_last_beat});
     } else {
       // TODO: add a heuristic that knows
       // if this recursion is going down a strand of
       // sequences that are not correct.
       for (let i = 0; i < arr.length; i++) {
-        console.log('i',i);
+        //console.log('i',i);
         let curr = arr.slice();
         let next = curr.splice(i, 1);
-        //permute(curr.slice(), m.concat(next), level)
+        // pop stack
+        setTimeout(()=>{
+          permute(curr.slice(), m.concat(next), depth+1)
+        },0)
       }
    }
  }
 
- permute(inputArr);
+ permute(inputArr, [], 1);
 
  return result;
 }
 
 
-let permutations = permutator(_.range(1,16));
-console.log('final!', _.sortBy(results, 'final').reverse()[0]);
+let permutations = permutator(range);
+//console.log('final!', _.sortBy(results, 'final').reverse()[0]);
 
 // Find a general solution that applies to any length sequence of numbers
 // approach Z brute force all permutations

@@ -301,12 +301,22 @@ var rand = function(min, max) {
 var probability = function(n) {
      return !!n && Math.random() <= n;
 };
+function lerp(minA, maxA, currA, minB, maxB){
+  var distA = maxA - minA;
+  var distB = maxB - minB;
+  var scale = (currA - minA) / distA;
+  var currB = minB + (distB * scale);
+  // console.log([minA,maxA], [minB,maxB], currA, '->', result);
+  return currB;
+}
 
 function generateWeightedList(slot, pool) {
 	let weightedList = pool.slice();
 
 	// half the time... ignore our weights and go full random.
-	if(probability(.5)){
+	let dynamic_probability = lerp(1,MAX_GENERATIONS,generation,0.5,0);
+	//console.log('dynamic_probability', dynamic_probability);
+	if(probability(dynamic_probability)){
 		return weightedList;
 	}
 
@@ -322,14 +332,14 @@ function generateWeightedList(slot, pool) {
 				//console.log({inPool, number, score});
 
 				if (inPool) {
-					if(probability(.5)){
+					//if(probability(.5)){
 						// introducing some chance here that adds some noise to the weights
 						// by ignoring scores occasionally 
 						// so that we don't get stuck with overly confident local maxima
 						for (var b = 0; b < score; b++) {
 							weightedList.push(number);
 						}
-					}
+					//}
 				}
 			})
 		}
