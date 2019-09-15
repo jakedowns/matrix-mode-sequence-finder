@@ -45,9 +45,9 @@ async function run() {
     promises.push(promise);
   }
   let promise_all = await Promise.all(promises).then(function(out){
-    console.log('all resolved', {out, results});
+    //console.log('all resolved', {out, results});
   });
-  console.log('results?', promise_all);
+  //console.log('results?', promise_all);
 }
 
 run().catch(err => console.error(err))

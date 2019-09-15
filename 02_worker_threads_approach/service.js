@@ -14,6 +14,10 @@ const index = range.indexOf(workerData.i);
 let seq = ["t","r","u","c","k"];
 array_move(seq, index, 0);
 
-permutator(seq).then((permutations)=>{
-	parentPort.postMessage({index, permutations, done:true})
-});
+for await (candidate of permutator(seq.slice(1), seq[0])){
+	parentPort.postMessage({index, seq:candidate.seq, done:candidate.done})
+}
+
+// permutator(seq).then((permutations)=>{
+// 	parentPort.postMessage({index, permutations, done:true})
+// });
