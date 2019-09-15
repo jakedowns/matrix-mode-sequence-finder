@@ -36,18 +36,18 @@ function runService(workerData) {
 
 async function run() {
   let promises = [];
-
-  var i = 1;
-  //for(var i = 1; i < SEQ_LENGTH + 1; i++){
-    promises.push(runService({i, SEQ_LENGTH, MIN_SCORE_THRESHOLD}).then((result)=>{
+  let results = [];
+  for(var i = 1; i < SEQ_LENGTH + 1; i++){
+    let promise = runService({i, SEQ_LENGTH, MIN_SCORE_THRESHOLD}).then((result)=>{
       console.log('call back from ', {index:result.index, mixed:result.permutations.length});
-    })); // check strand
-  //}
-
-  let results = await Promise.all(promises).then(function(out){
-    console.log('all resolved', out);
+      results.push(result);
+    });
+    promises.push(promise);
+  }
+  let promise_all = await Promise.all(promises).then(function(out){
+    console.log('all resolved', {out, results});
   });
-  console.log('results?', results);
+  console.log('results?', promise_all);
 }
 
 run().catch(err => console.error(err))
