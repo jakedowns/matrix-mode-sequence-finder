@@ -8,7 +8,7 @@ let topScore = 0;
 
 let results = [];
 
-const MIN_SCORE_THRESHOLD = 1; // memory leak prevention
+const MIN_SCORE_THRESHOLD = 2000000; // memory leak prevention
 
 const MOMENT_START = moment();
 let TIME_TOP_SCORE_BEAT = moment();
@@ -124,7 +124,7 @@ const permutator = (inputArr) => {
 }
 
 
-let permutations = permutator(range);
+permutator(range);
 //console.log('final!', _.sortBy(results, 'final').reverse()[0]);
 
 // Find a general solution that applies to any length sequence of numbers

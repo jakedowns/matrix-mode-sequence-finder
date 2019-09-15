@@ -11,13 +11,38 @@ import {array_move} from '../lib/util.js';
 const range = _.range(1,workerData.SEQ_LENGTH + 1);
 const index = range.indexOf(workerData.i);
 
-let seq = ["t","r","u","c","k"];
+parentPort.on('message',(message)=>{
+	if(message==="terminate"){
+		parentPort.postMessage({done:true});
+		process.exit(0);
+	}
+})
+
+let seq = range;
+//let seq = "truck".split('');
 array_move(seq, index, 0);
 
-for await (candidate of permutator(seq.slice(1), seq[0])){
-	parentPort.postMessage({index, seq:candidate.seq, done:candidate.done})
-}
+let generator = permutator(seq.slice(1));
 
-// permutator(seq).then((permutations)=>{
-// 	parentPort.postMessage({index, permutations, done:true})
-// });
+// for(var p of generator){
+// 	let out = {};
+// 	out.seq = [seq[0]].concat(p);
+// 	out.id = workerData.i;
+// 	parentPort.postMessage(out);
+// }
+
+let iterate = function(iterable){
+	let n = iterable.next();
+	let out = {};
+	out.seq = [seq[0]].concat(n.value);
+	out.id = workerData.i;
+	parentPort.postMessage(out);
+	if(!n.done){
+		setTimeout(()=>{
+			iterate(iterable);
+		},0);
+	}else{
+		parentPort.postMessage({done:true});
+	}
+}
+iterate(generator);
