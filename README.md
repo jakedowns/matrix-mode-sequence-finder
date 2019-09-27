@@ -82,3 +82,15 @@ let scoreSequence = function(seq){
   return final;
 }
 ```
+
+---
+
+Latest notes:
+
+- my latest multi threaded attempt:
+
+  A) did not fully utilize my CPU (maybe we should try a compiled language, or a CUDA type thing)
+
+  B) would have taken 408 years to exhaust all permutations
+		
+		

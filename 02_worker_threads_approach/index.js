@@ -22,7 +22,7 @@ const _ = require('underscore');
 
 import scoreSequence from '../lib/scoreSequence.js';
 
-const SEQ_LENGTH = 9;
+const SEQ_LENGTH = 12;
 const MIN_SCORE_THRESHOLD = 1; // memory leak prevention
 let topScore = 0;
 let bestSequence = "";
@@ -34,7 +34,7 @@ let thread_iterations = {};
 let duration = "";
 
 const EXIT_THRESHOLD = 5000; // after how many iterations should a underperforming thread be cancelled?
-const PERF_THRESHOLD = 0; // what thread score constitues underperformance?
+const PERF_THRESHOLD = -1; // what thread score constitues underperformance?
 
 function runService(workerData) {
   return new Promise((resolve, reject) => {
@@ -61,6 +61,7 @@ function runService(workerData) {
           duration = moment.utc(moment().diff(MOMENT_START)).format("HH:mm:ss");;
 
           console.log({
+            seq:message.seq.join(','),
             topScore,
             duration,
             delta_since_last_beat,
@@ -103,6 +104,7 @@ async function run() {
 
   });
   duration = moment.utc(moment().diff(MOMENT_START)).format("HH:mm:ss");;
+  delta_since_last_beat = moment.utc(moment().diff(TIME_TOP_SCORE_BEAT)).format("HH:mm:ss");
   console.log('results', {
     topScore,
     seq:bestSequence.join(','),
@@ -111,6 +113,7 @@ async function run() {
     thread_performance,
     thread_iterations
   })
+  process.exit(0)
 }
 
 run().catch(err => console.error(err))
