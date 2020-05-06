@@ -55,7 +55,8 @@ Unfortunately there's no global leader board in the game for this mode, so I'm n
 Here's some other methods I'd like to attempt for solving this riddle:
 1. Performance optimized Multi-threaded Brute Force (GPU assisted?)
 2. Machine Learning / Neural Network Approach?
-
+3. A more wholistic weighted approach that recognizes not only the best balls for each spot, but also their relationship to the others in the sequence around them to weight when they appear before or after another number
+4. something based on a more logical strategy where it would only need to test a handful of possibilities fitting a specific criteria
 
 ---
 
