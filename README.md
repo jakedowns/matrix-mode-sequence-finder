@@ -8,6 +8,23 @@ Eivaa Games' [Pool Billiards 3D](https://www.eivaagames.com/games/pool-billiards
 
 One interesting side-effect of this scoring method is that if you pocket the balls in sequence 1,2,3...15 your final score will be **1**.
 
+### Update 5.6.2020 - A new top score!
+
+| player      | score     | sequence                            |
+|-------------|-----------|-------------------------------------|
+| rerusselljr | 2,796,160 | 4,8,12,1,5,9,13,2,6,10,14,3,7,11,15 |
+| jakedowns   | 2,793,472 | 4,8,12,2,6,10,14,3,7,11,15,1,5,9,13 |
+|             |           |                                     |
+
+> **rerusselljr**: I noticed that the sequence had groups of numbers increasing by 4, but were "out of order".
+> The sequence you posted was: `4,8,12,2,6,10,14,3,7,11,15,1,5,9,13`
+> This sequence gives you 2,793,472 (when dividing by three, the game rounds down/uses the floor). I noticed the "1" group was in at the end instead of after the "4" group. I thought of it like the circle of fourths/fifths in music. In this case, the fourth number after 12 in 15 is 1, not 2. So, I rearranged your sequence to: `4,8,12,1,5,9,13,2,6,10,14,3,7,11,15`
+> The score I got was 2,796,160.
+>
+>I still am not sure if this is the highest, as I just started thinking about this problem literally about an hour or two before writing this. Also, I am not much of a mathematician. Maybe the folks at Numberphile can find a solution.
+
+### My Approach
+
 I set about solving shorter sequences as an exercise and I was able to brute-force check & score each possible permutation for seq. length 2-11 to find the highest scoring sequences:
 
 ```
